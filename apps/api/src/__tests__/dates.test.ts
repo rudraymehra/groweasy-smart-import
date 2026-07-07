@@ -36,10 +36,14 @@ describe('normalizeDate', () => {
     expect(normalizeDate('6/7/26', 'DD/MM/YY')).toBe('2026-07-06');
   });
 
-  it('converts Excel serial dates', () => {
-    const out = normalizeDate('45478', null); // 2024-07-05
+  it('converts Excel serial dates (timezone-independent)', () => {
+    const out = normalizeDate('45478', null);
     expectJsParseable(out);
-    expect(out).toMatch(/^2024-07-0[45]$/);
+    expect(out).toBe('2024-07-05'); // exact — UTC math, no local-time drift
+  });
+
+  it('keeps the time for 12-hour hint formats', () => {
+    expect(normalizeDate('03/07/2026 02:30 PM', 'DD/MM/YYYY hh:mm A')).toBe('2026-07-03 14:30:00');
   });
 
   it('keeps time components when present', () => {

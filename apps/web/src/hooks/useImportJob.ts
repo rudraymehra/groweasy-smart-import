@@ -15,6 +15,7 @@ export function useImportJob(jobId: string | null, active: boolean): void {
 
   useEffect(() => {
     if (!jobId || !active) return;
+    failures.current = 0; // fresh tolerance per job
 
     const store = useImportStore.getState();
     let source: EventSource | null = null;

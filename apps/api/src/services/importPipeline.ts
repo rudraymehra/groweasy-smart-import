@@ -72,6 +72,7 @@ export async function runImport(
 
     job.result = result;
     job.status = 'done';
+    job.completedAt = Date.now();
     emit(job, { type: 'status', status: 'done' });
     emit(job, { type: 'done', result });
     logger.info(
@@ -82,6 +83,7 @@ export async function runImport(
     const message = error instanceof Error ? error.message : 'Unknown error';
     logger.error({ jobId: job.id, err: error }, 'Import failed');
     job.status = 'failed';
+    job.completedAt = Date.now();
     job.error = { code: 'IMPORT_FAILED', message };
     emit(job, { type: 'error', code: 'IMPORT_FAILED', message });
   }

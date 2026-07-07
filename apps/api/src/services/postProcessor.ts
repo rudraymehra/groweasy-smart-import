@@ -108,10 +108,9 @@ export function validateAndNormalize(input: PostProcessInput): ImportResult {
       continue;
     }
 
-    // --- Dedupe within the file on email or phone.
-    const dedupeKeys = [email, mobile ? `${countryCode ?? ''}${mobile}` : null].filter(
-      (k): k is string => k !== null,
-    );
+    // --- Dedupe within the file on email or phone. Keyed by national digits
+    // only, so "+91 98765..." and its unvalidated bare-digit twin still match.
+    const dedupeKeys = [email, mobile].filter((k): k is string => k !== null);
     const duplicateOf = dedupeKeys.map((k) => seenContacts.get(k)).find((v) => v !== undefined);
     if (duplicateOf !== undefined) {
       skipped.push({

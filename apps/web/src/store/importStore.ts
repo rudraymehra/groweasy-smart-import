@@ -33,6 +33,7 @@ interface ImportState {
   log: LogLine[];
   result: ImportResult | null;
   error: string | null;
+  mappingAnnounced: boolean;
 
   selectFile: (file: File) => Promise<void>;
   requestMapping: () => Promise<void>;
@@ -63,6 +64,7 @@ const initial = {
   log: [] as LogLine[],
   result: null,
   error: null,
+  mappingAnnounced: false,
 };
 
 export const useImportStore = create<ImportState>((set, get) => ({
@@ -135,6 +137,9 @@ export const useImportStore = create<ImportState>((set, get) => ({
   },
 
   applyJobStatus(status) {
+    // SSE reconnects replay a status snapshot and the polling fallback
+    // re-reports every 2s — only log genuine transitions.
+    if (get().jobStatus === status) return;
     const labels: Partial<Record<JobStatus, string>> = {
       mapping: 'AI is reading the column headers…',
       extracting: 'Extracting records in batches…',
@@ -147,12 +152,21 @@ export const useImportStore = create<ImportState>((set, get) => ({
   },
 
   applyMapping(mapping) {
+    const first = !get().mappingAnnounced;
     if (!get().mapping) set({ mapping });
+    if (!first) return;
+    set({ mappingAnnounced: true });
     const mapped = mapping.mappings.filter((m) => m.crm_field !== null).length;
     get().pushLog(`Column mapping ready · ${mapped}/${mapping.mappings.length} columns mapped`, 'ok');
   },
 
   applyProgress(progress, retried) {
+    const prev = get().progress;
+    const advanced =
+      !prev ||
+      progress.rows_processed > prev.rows_processed ||
+      progress.batches_done > prev.batches_done;
+    if (!advanced) return; // snapshot replays and idle polling ticks
     set({ progress });
     get().pushLog(
       `Batch ${progress.batches_done}/${progress.batches_total} · ${progress.rows_processed}/${progress.rows_total} rows · ${progress.parsed_so_far} parsed`,

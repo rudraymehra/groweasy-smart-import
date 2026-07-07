@@ -14,6 +14,12 @@ const CONFIDENCE_RANK = { high: 3, medium: 2, low: 1 } as const;
 export function sanitizeMapping(mapping: HeaderMapping, headers: string[]): HeaderMapping {
   const byField = new Map<string, number>(); // crm_field -> index into mappings
 
+  // libphonenumber silently ignores a non-ISO region ("India", "91"), which
+  // would disable country-aware phone parsing for the whole file — normalise
+  // to a strict alpha-2 code or drop it.
+  const country = mapping.default_country?.trim().toUpperCase() ?? null;
+  const defaultCountry = country && /^[A-Z]{2}$/.test(country) ? country : null;
+
   const mappings = headers.map((header, index) => {
     const found =
       mapping.mappings.find((m) => m.source_column_index === index) ??
@@ -50,7 +56,7 @@ export function sanitizeMapping(mapping: HeaderMapping, headers: string[]): Head
     if (keepNew) byField.set(field, i);
   }
 
-  return { ...mapping, mappings: result };
+  return { ...mapping, default_country: defaultCountry, mappings: result };
 }
 
 export async function mapHeaders(

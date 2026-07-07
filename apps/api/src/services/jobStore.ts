@@ -11,10 +11,13 @@ export interface Job {
   result: ImportResult | null;
   error: { code: string; message: string } | null;
   createdAt: number;
+  /** Set when the pipeline finishes (done or failed) — drives eviction. */
+  completedAt: number | null;
   emitter: EventEmitter;
 }
 
-const JOB_TTL_MS = 30 * 60 * 1000; // results retrievable for 30 min after creation
+const JOB_TTL_MS = 30 * 60 * 1000; // results retrievable for 30 min after COMPLETION
+const JOB_HARD_CAP_MS = 6 * 60 * 60 * 1000; // stuck jobs are reaped eventually
 const FILE_TTL_MS = 10 * 60 * 1000; // parsed files cached 10 min between preview and confirm
 const SWEEP_INTERVAL_MS = 60 * 1000;
 
@@ -49,6 +52,7 @@ class JobStore {
       result: null,
       error: null,
       createdAt: Date.now(),
+      completedAt: null,
       emitter: new EventEmitter(),
     };
     job.emitter.setMaxListeners(50);
@@ -73,7 +77,11 @@ class JobStore {
   private sweep(): void {
     const now = Date.now();
     for (const [id, job] of this.jobs) {
-      if (now - job.createdAt > JOB_TTL_MS) {
+      // Never reap a running job on the normal TTL — evict 30 min after it
+      // finished, with a hard cap as a backstop against jobs stuck forever.
+      const expired = job.completedAt !== null && now - job.completedAt > JOB_TTL_MS;
+      const stuck = now - job.createdAt > JOB_HARD_CAP_MS;
+      if (expired || stuck) {
         job.emitter.removeAllListeners();
         this.jobs.delete(id);
       }

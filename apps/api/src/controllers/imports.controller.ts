@@ -57,7 +57,13 @@ export async function createImport(req: Request, res: Response): Promise<void> {
 
   let mapping = null;
   if (typeof req.body?.mapping === 'string' && req.body.mapping.length > 0) {
-    const result = HeaderMappingSchema.safeParse(JSON.parse(req.body.mapping));
+    let parsedJson: unknown;
+    try {
+      parsedJson = JSON.parse(req.body.mapping);
+    } catch {
+      throw badRequest('INVALID_MAPPING', 'The mapping payload is not valid JSON');
+    }
+    const result = HeaderMappingSchema.safeParse(parsedJson);
     if (!result.success) throw badRequest('INVALID_MAPPING', 'The mapping payload is malformed');
     mapping = result.data;
   }

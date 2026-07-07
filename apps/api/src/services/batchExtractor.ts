@@ -64,7 +64,6 @@ export async function extractAll(
   let rowsProcessed = 0;
   let parsedSoFar = 0;
   let skippedSoFar = 0;
-  let anyRetried = false;
 
   const callModel = async (batch: ParsedRow[]): Promise<RawExtractedRecord[]> => {
     const { data } = await provider.generateStructured({
@@ -79,30 +78,39 @@ export async function extractAll(
     return data.records;
   };
 
+  /** Live estimate for the progress UI; final numbers come from post-processing. */
+  const looksParseable = (r: RawExtractedRecord) =>
+    Boolean(r.email || r.phone_raw || r.extra_phones.length > 0);
+
+  interface BatchOutcome {
+    parsed: number;
+    retried: boolean;
+  }
+
   /** Extract one batch with retries; bisect on persistent failure. */
-  const processBatch = async (batch: ParsedRow[], allowRequeue: boolean): Promise<void> => {
+  const processBatch = async (batch: ParsedRow[], allowRequeue: boolean): Promise<BatchOutcome> => {
+    const outcome: BatchOutcome = { parsed: 0, retried: false };
     let records: RawExtractedRecord[];
     try {
       records = await withRetry(() => callModel(batch), {
         retries: 3,
         shouldRetry: (e) => !(e instanceof TruncationError),
         onRetry: (e, attempt) => {
-          anyRetried = true;
+          outcome.retried = true;
           logger.warn({ attempt, rows: batch.length, err: (e as Error).message }, 'Retrying batch');
         },
       });
     } catch (error) {
       if (batch.length > 1) {
         logger.warn({ rows: batch.length }, 'Batch failed after retries — bisecting');
-        anyRetried = true;
         const mid = Math.ceil(batch.length / 2);
-        await processBatch(batch.slice(0, mid), allowRequeue);
-        await processBatch(batch.slice(mid), allowRequeue);
-        return;
+        const left = await processBatch(batch.slice(0, mid), allowRequeue);
+        const right = await processBatch(batch.slice(mid), allowRequeue);
+        return { parsed: left.parsed + right.parsed, retried: true };
       }
       logger.error({ row: batch[0]!.row_index, err: (error as Error).message }, 'Row failed');
       failed.push(batch[0]!.row_index);
-      return;
+      return outcome;
     }
 
     // Reconciliation: the model must return exactly the row_indexes it was sent.
@@ -112,28 +120,29 @@ export async function extractAll(
       if (sent.has(record.row_index) && !seen.has(record.row_index)) {
         seen.add(record.row_index);
         collected.push(record);
+        if (looksParseable(record)) outcome.parsed++;
       }
       // Unknown or duplicate row_index → dropped (first occurrence wins).
     }
     const missing = batch.filter((r) => !seen.has(r.row_index));
     if (missing.length > 0) {
       if (allowRequeue) {
-        anyRetried = true;
         logger.warn({ rows: missing.map((r) => r.row_index) }, 'Rows missing — re-queueing once');
-        await processBatch(missing, false);
+        const requeued = await processBatch(missing, false);
+        outcome.parsed += requeued.parsed;
+        outcome.retried = true;
       } else {
         failed.push(...missing.map((r) => r.row_index));
       }
     }
+    return outcome;
   };
 
   await runWithConcurrency(batches, env.MAX_CONCURRENCY, async (batch) => {
-    await processBatch(batch, true);
+    const outcome = await processBatch(batch, true);
     batchesDone++;
     rowsProcessed += batch.length;
-    // Live estimate for the progress UI; final numbers come from post-processing.
-    const inBatch = collected.filter((r) => sentIn(batch, r.row_index));
-    parsedSoFar += inBatch.filter((r) => r.email || r.phone_raw || r.extra_phones.length > 0).length;
+    parsedSoFar += outcome.parsed;
     skippedSoFar = rowsProcessed - parsedSoFar;
     onProgress?.({
       batches_total: batches.length,
@@ -142,13 +151,9 @@ export async function extractAll(
       rows_total: rows.length,
       parsed_so_far: parsedSoFar,
       skipped_so_far: skippedSoFar,
-      retried: anyRetried,
+      retried: outcome.retried, // per-batch, not sticky across the whole run
     });
   });
 
   return { records: collected, failed_row_indexes: failed };
-}
-
-function sentIn(batch: ParsedRow[], rowIndex: number): boolean {
-  return batch.some((r) => r.row_index === rowIndex);
 }

@@ -1,7 +1,9 @@
 import dayjs from 'dayjs';
 import customParseFormat from 'dayjs/plugin/customParseFormat.js';
+import utc from 'dayjs/plugin/utc.js';
 
 dayjs.extend(customParseFormat);
+dayjs.extend(utc);
 
 /**
  * Formats tried when the column-level hint (from the header-mapping call)
@@ -34,8 +36,10 @@ const OUTPUT_DATE_ONLY = 'YYYY-MM-DD';
 
 function excelSerialToDate(serial: number): dayjs.Dayjs {
   // Excel day 0 is 1899-12-30 (accounting for the fictional 1900 leap day).
+  // Format in UTC — local-time formatting shifts the date a day on servers
+  // west of UTC.
   const ms = Math.round((serial - 25569) * 86400 * 1000);
-  return dayjs(ms);
+  return dayjs.utc(ms);
 }
 
 /**
@@ -63,7 +67,8 @@ export function normalizeDate(raw: string, hintFormat: string | null): string | 
   for (const fmt of formats) {
     const parsed = dayjs(value, fmt, true);
     if (parsed.isValid()) {
-      return parsed.format(hasTime && fmt.includes('H') ? OUTPUT_WITH_TIME : OUTPUT_DATE_ONLY);
+      const fmtHasTime = fmt.includes('H') || fmt.includes('h');
+      return parsed.format(hasTime && fmtHasTime ? OUTPUT_WITH_TIME : OUTPUT_DATE_ONLY);
     }
   }
 

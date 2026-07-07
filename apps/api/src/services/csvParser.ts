@@ -2,7 +2,11 @@ import Papa from 'papaparse';
 import { badRequest } from '../lib/errors.js';
 
 export interface ParsedRow {
-  /** 1-based line position in the original file (header/junk rows included). */
+  /**
+   * 1-based CSV record position counting from the top of the file (header and
+   * junk rows included). Equals the physical line number unless a quoted cell
+   * contains embedded line breaks.
+   */
   row_index: number;
   /** Cell values keyed by header name. */
   values: Record<string, string>;
@@ -28,7 +32,12 @@ const HEADER_KEYWORDS = [
 ];
 
 function decodeBuffer(buf: Buffer): string {
-  // Strip UTF-8 BOM; fall back to latin1 when utf8 decoding produced replacement chars.
+  // Strip the UTF-8 BOM at the byte level so it's gone regardless of which
+  // decoding path wins below.
+  if (buf.length >= 3 && buf[0] === 0xef && buf[1] === 0xbb && buf[2] === 0xbf) {
+    buf = buf.subarray(3);
+  }
+  // Fall back to latin1 when utf8 decoding produced replacement characters.
   let text = buf.toString('utf8');
   const replacements = (text.match(/�/g) ?? []).length;
   if (replacements > 0 && replacements / Math.max(text.length, 1) > 0.0005) {
@@ -86,12 +95,15 @@ export function findHeaderRowIndex(rows: string[][]): number {
 }
 
 function dedupeHeaders(raw: string[]): string[] {
-  const seen = new Map<string, number>();
+  const used = new Set<string>();
   return raw.map((h, i) => {
     const base = h.trim() || `Column ${i + 1}`;
-    const count = seen.get(base) ?? 0;
-    seen.set(base, count + 1);
-    return count === 0 ? base : `${base} (${count + 1})`;
+    let name = base;
+    // Probe until unique — handles pathological inputs like
+    // ["Email", "Email", "Email (2)"] without silently colliding.
+    for (let n = 2; used.has(name); n++) name = `${base} (${n})`;
+    used.add(name);
+    return name;
   });
 }
 

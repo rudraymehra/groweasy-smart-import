@@ -60,6 +60,24 @@ describe('parseCsv', () => {
     expect(parsed.headers).toEqual(['phone', 'phone (2)', 'name']);
   });
 
+  it('never emits colliding headers, even for adversarial inputs', () => {
+    const parsed = parseCsv(Buffer.from('Email,Email,Email (2)\na@x.com,b@x.com,c@x.com\n'));
+    expect(new Set(parsed.headers).size).toBe(3);
+    // No column's data may be silently lost to a name collision.
+    expect(Object.values(parsed.rows[0]!.values).sort()).toEqual([
+      'a@x.com',
+      'b@x.com',
+      'c@x.com',
+    ]);
+  });
+
+  it('strips the BOM even when the latin1 fallback decoding path fires', () => {
+    const bom = Buffer.from([0xef, 0xbb, 0xbf]);
+    const latin1Body = Buffer.from('name,caf\xe9\nAlice,3\n', 'latin1');
+    const parsed = parseCsv(Buffer.concat([bom, latin1Body]));
+    expect(parsed.headers[0]).toBe('name');
+  });
+
   it('parses tab-delimited files', () => {
     const parsed = parseCsv(Buffer.from('name\temail\nAlice\ta@x.com\n'));
     expect(parsed.meta.delimiter).toBe('\t');
