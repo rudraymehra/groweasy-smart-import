@@ -1,0 +1,17 @@
+# Render blueprint — deploys the Express API on the free tier.
+# The Next.js frontend deploys separately on Vercel (root directory: apps/web).
+services:
+  - type: web
+    name: groweasy-smart-import-api
+    runtime: node
+    plan: free
+    buildCommand: npm install && npm run build -w packages/shared -w apps/api
+    startCommand: node apps/api/dist/index.js
+    healthCheckPath: /api/health
+    envVars:
+      - key: ANTHROPIC_API_KEY
+        sync: false # set in the Render dashboard
+      - key: ALLOWED_ORIGIN
+        sync: false # your Vercel URL, e.g. https://groweasy-smart-import.vercel.app
+      - key: NODE_VERSION
+        value: '22'

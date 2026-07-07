@@ -15,3 +15,4 @@ npm-debug.log*
 .turbo/
 .vercel/
 *.tsbuildinfo
+scripts/e2e-shots/
