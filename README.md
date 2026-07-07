@@ -125,7 +125,7 @@ Errors are always `{ "error": { "code", "message" } }` with a meaningful HTTP st
 Requires Node ≥ 20 and an [Anthropic API key](https://console.anthropic.com).
 
 ```bash
-git clone <REPO_URL> && cd grow_easy
+git clone https://github.com/rudraymehra/groweasy-smart-import && cd grow_easy
 npm install
 cp apps/api/.env.example apps/api/.env   # put your ANTHROPIC_API_KEY here
 npm run dev                               # api on :4000, web on :3000
