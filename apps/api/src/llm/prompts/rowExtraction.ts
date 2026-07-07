@@ -16,7 +16,7 @@ export const ROW_EXTRACTION_SYSTEM = `You are the data-extraction engine of a CR
 
 Non-negotiable rules:
 1. Return EXACTLY one record per input row, carrying the same row_index. Never omit, merge, duplicate or invent rows.
-2. Extract ONLY values present in the row. Never invent, guess or fill defaults. When a value is absent, use null (or [] for the array fields).
+2. Extract ONLY values present in the row. Never invent, guess or fill defaults. When a value is absent, use null (or [] for the array fields). In particular: never copy DEFAULT COUNTRY into the country field, and never derive city/state/country from one another — each is filled only when the row explicitly contains it.
 3. crm_status — map the row's status/stage/disposition SEMANTICS to exactly one of:
    - GOOD_LEAD_FOLLOW_UP: interested, hot/warm lead, call back, follow up, demo scheduled, site visit planned, negotiating
    - DID_NOT_CONNECT: no answer, RNR (ring no reply), switched off, unreachable, busy, not picking up
