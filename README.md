@@ -33,7 +33,7 @@ Every requirement and every bonus item:
 | ✅ | **Virtualized tables** — a 50k-row file scrolls like a 50-row one |
 | ✅ | Streaming/incremental parsing (preview stops at 500 rows; the file is never fully parsed in the browser) |
 | ✅ | Dark mode |
-| ✅ | 62 unit + integration tests (Vitest) + a Playwright E2E drive script |
+| ✅ | 65 unit + integration tests (Vitest) + a Playwright E2E drive script |
 | ✅ | Docker (multi-stage images + `docker compose up`) |
 | ✅ | Deployed on Vercel (web) + Render (API) |
 
@@ -125,7 +125,7 @@ Errors are always `{ "error": { "code", "message" } }` with a meaningful HTTP st
 Requires Node ≥ 20 and an [Anthropic API key](https://console.anthropic.com).
 
 ```bash
-git clone https://github.com/rudraymehra/groweasy-smart-import && cd grow_easy
+git clone https://github.com/rudraymehra/groweasy-smart-import && cd groweasy-smart-import
 npm install
 cp apps/api/.env.example apps/api/.env   # put your ANTHROPIC_API_KEY here
 npm run dev                               # api on :4000, web on :3000
@@ -142,7 +142,7 @@ ANTHROPIC_API_KEY=sk-ant-... docker compose up --build
 ### Tests
 
 ```bash
-npm test                      # 62 unit + integration tests (Vitest)
+npm test                      # 65 unit + integration tests (Vitest)
 node scripts/e2e-drive.mjs    # Playwright drive of the full wizard (needs both dev servers)
 ```
 
