@@ -1,0 +1,108 @@
+@import 'tailwindcss';
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* GrowEasy-native palette: teal-tinted neutrals, ember-orange primary. */
+:root {
+  --canvas: #f4f7f6;
+  --surface: #ffffff;
+  --surface-2: #eef2f1;
+  --ink: #1a2421;
+  --muted: #61706a;
+  --line: #dfe6e3;
+  --ember: #e56b34;
+  --ember-strong: #c9571f;
+  --ember-soft: #fbe9df;
+  --pine: #0e7a6c;
+  --pine-soft: #e2f1ee;
+  --ok: #167a53;
+  --ok-soft: #e0f3ea;
+  --warn: #96660a;
+  --warn-soft: #faf0d8;
+  --bad: #b3382c;
+  --bad-soft: #fbe7e4;
+  --info: #23568f;
+  --info-soft: #e4eefb;
+}
+
+.dark {
+  --canvas: #0d1312;
+  --surface: #151d1b;
+  --surface-2: #1c2624;
+  --ink: #e8efec;
+  --muted: #91a19a;
+  --line: #27332f;
+  --ember: #ef7c44;
+  --ember-strong: #f79063;
+  --ember-soft: #38221a;
+  --pine: #3aa392;
+  --pine-soft: #14302b;
+  --ok: #4cc296;
+  --ok-soft: #15302a;
+  --warn: #dcaa4a;
+  --warn-soft: #322813;
+  --bad: #e37065;
+  --bad-soft: #371c19;
+  --info: #7aabe8;
+  --info-soft: #16263c;
+}
+
+@theme inline {
+  --color-canvas: var(--canvas);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-ember: var(--ember);
+  --color-ember-strong: var(--ember-strong);
+  --color-ember-soft: var(--ember-soft);
+  --color-pine: var(--pine);
+  --color-pine-soft: var(--pine-soft);
+  --color-ok: var(--ok);
+  --color-ok-soft: var(--ok-soft);
+  --color-warn: var(--warn);
+  --color-warn-soft: var(--warn-soft);
+  --color-bad: var(--bad);
+  --color-bad-soft: var(--bad-soft);
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
+  --font-sans: var(--font-grotesk), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-mono-data), ui-monospace, 'SF Mono', monospace;
+}
+
+html {
+  color-scheme: light;
+}
+html.dark {
+  color-scheme: dark;
+}
+
+body {
+  background: var(--canvas);
+  color: var(--ink);
+  font-feature-settings: 'ss01';
+}
+
+/* Thin, unobtrusive scrollbars inside data tables. */
+.data-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: var(--line) transparent;
+}
+.data-scroll::-webkit-scrollbar {
+  height: 8px;
+  width: 8px;
+}
+.data-scroll::-webkit-scrollbar-thumb {
+  background: var(--line);
+  border-radius: 4px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

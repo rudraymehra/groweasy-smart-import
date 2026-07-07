@@ -4,7 +4,7 @@ import { z } from 'zod';
 const EnvSchema = z.object({
   ANTHROPIC_API_KEY: z.string().min(1, 'ANTHROPIC_API_KEY is required — see .env.example'),
   PORT: z.coerce.number().int().positive().default(4000),
-  ALLOWED_ORIGIN: z.string().default('http://localhost:3000'),
+  ALLOWED_ORIGIN: z.string().default('http://localhost:3000,http://localhost:3001'),
   EXTRACTION_MODEL: z.string().default('claude-haiku-4-5'),
   MAPPING_MODEL: z.string().default('claude-sonnet-5'),
   BATCH_SIZE: z.coerce.number().int().min(1).max(200).default(30),
