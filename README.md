@@ -2,7 +2,7 @@
 
 **AI-powered CSV importer** — upload *any* lead export (Google Ads, real-estate CRM dumps, hand-made spreadsheets) and get clean, validated GrowEasy CRM records out. The AI reads your columns, whatever they're called; deterministic code validates everything it returns.
 
-> **Live demo:** `<FRONTEND_URL>` · **API:** `<API_URL>/api/health`
+> **Live demo:** **https://groweasy-smart-import-rudray.vercel.app** · **API:** https://groweasy-smart-import-api.onrender.com/api/health
 > *(Render's free tier sleeps after 15 min of inactivity — the first request may take ~40 s to wake the API.)*
 
 Built for the GrowEasy Software Developer assignment.
